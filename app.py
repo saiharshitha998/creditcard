@@ -2,53 +2,54 @@ import streamlit as st
 import pandas as pd
 import joblib
 
-# Load trained model
+# Load model
 model = joblib.load("fraud_detection_model.pkl")
 
 st.set_page_config(page_title="Credit Card Fraud Detection", page_icon="💳")
 
-st.title("💳 Credit Card Fraud Detection System")
-st.write("Upload a CSV file containing transaction data.")
+st.title("💳 Credit Card Fraud Detection")
+st.write("Enter the transaction details below.")
 
-uploaded_file = st.file_uploader(
-    "Choose CSV File",
-    type=["csv"]
-)
+# Manual Input
+time = st.number_input("Time", value=0.0)
+amount = st.number_input("Amount", value=0.0)
 
-if uploaded_file is not None:
+inputs = []
 
-    df = pd.read_csv(uploaded_file)
+for i in range(1, 29):
+    value = st.number_input(f"V{i}", value=0.0)
+    inputs.append(value)
 
-    st.subheader("Uploaded Data")
-    st.dataframe(df.head())
+if st.button("Predict"):
 
-    try:
-        predictions = model.predict(df)
+    data = [[
+        time,
+        *inputs,
+        amount
+    ]]
 
-        df["Prediction"] = predictions
+    columns = [
+        "Time",
+        "V1","V2","V3","V4","V5","V6","V7","V8","V9",
+        "V10","V11","V12","V13","V14","V15","V16",
+        "V17","V18","V19","V20","V21","V22","V23",
+        "V24","V25","V26","V27","V28",
+        "Amount"
+    ]
 
-        df["Prediction"] = df["Prediction"].map({
-            0: "Legitimate",
-            1: "Fraud"
-        })
+    df = pd.DataFrame(data, columns=columns)
 
-        st.subheader("Prediction Results")
-        st.dataframe(df.head())
+    prediction = model.predict(df)[0]
 
-        fraud_count = (df["Prediction"] == "Fraud").sum()
-        legit_count = (df["Prediction"] == "Legitimate").sum()
+    probability = model.predict_proba(df)[0]
 
-        st.metric("Fraud Transactions", fraud_count)
-        st.metric("Legitimate Transactions", legit_count)
+    confidence = max(probability) * 100
 
-        csv = df.to_csv(index=False).encode("utf-8")
+    st.subheader("Prediction Result")
 
-        st.download_button(
-            "Download Results",
-            csv,
-            "prediction_results.csv",
-            "text/csv"
-        )
+    if prediction == 1:
+        st.error("🚨 Fraudulent Transaction")
+    else:
+        st.success("✅ Legitimate Transaction")
 
-    except Exception as e:
-        st.error(f"Error: {e}")
+    st.write(f"**Confidence:** {confidence:.2f}%")
