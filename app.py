@@ -2,48 +2,40 @@ import streamlit as st
 import pandas as pd
 import joblib
 
-# Load model
+# Load the trained model
 model = joblib.load("fraud_detection_model.pkl")
 
-st.set_page_config(page_title="Credit Card Fraud Detection", page_icon="💳")
+st.set_page_config(
+    page_title="Credit Card Fraud Detection",
+    page_icon="💳",
+    layout="centered"
+)
 
 st.title("💳 Credit Card Fraud Detection")
-st.write("Enter the transaction details below.")
+st.write("Enter the transaction details and click **Predict**.")
 
-# Manual Input
-time = st.number_input("Time", value=0.0)
+# Manual Inputs
 amount = st.number_input("Amount", value=0.0)
-
-inputs = []
-
-for i in range(1, 29):
-    value = st.number_input(f"V{i}", value=0.0)
-    inputs.append(value)
+v14 = st.number_input("V14", value=0.0)
+v12 = st.number_input("V12", value=0.0)
+v10 = st.number_input("V10", value=0.0)
+v17 = st.number_input("V17", value=0.0)
+v4 = st.number_input("V4", value=0.0)
 
 if st.button("Predict"):
 
-    data = [[
-        time,
-        *inputs,
-        amount
-    ]]
+    data = pd.DataFrame({
+        "V14": [v14],
+        "V12": [v12],
+        "V10": [v10],
+        "V17": [v17],
+        "Amount": [amount],
+        "V4": [v4]
+    })
 
-    columns = [
-        "Time",
-        "V1","V2","V3","V4","V5","V6","V7","V8","V9",
-        "V10","V11","V12","V13","V14","V15","V16",
-        "V17","V18","V19","V20","V21","V22","V23",
-        "V24","V25","V26","V27","V28",
-        "Amount"
-    ]
+    prediction = model.predict(data)[0]
 
-    df = pd.DataFrame(data, columns=columns)
-
-    prediction = model.predict(df)[0]
-
-    probability = model.predict_proba(df)[0]
-
-    confidence = max(probability) * 100
+    confidence = model.predict_proba(data).max() * 100
 
     st.subheader("Prediction Result")
 
@@ -51,5 +43,7 @@ if st.button("Predict"):
         st.error("🚨 Fraudulent Transaction")
     else:
         st.success("✅ Legitimate Transaction")
+
+    st.write(f"**Confidence:** {confidence:.2f}%")
 
     st.write(f"**Confidence:** {confidence:.2f}%")
